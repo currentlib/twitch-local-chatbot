@@ -1,0 +1,14 @@
+{
+    "commands": [
+        {
+            "mode": "replyAny",
+            "triggers": ["тг", "телеграм", "tg", "telegram"],
+            "message": "https://t.me/artshoque_tv"
+        },
+        {
+            "mode": "custom",
+            "triggers": ["тг", "телеграм", "tg", "telegram"],
+            "message": "https://t.me/artshoque_tv"
+        }
+    ]
+}
