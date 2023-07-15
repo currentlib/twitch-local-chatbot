@@ -1,14 +1,24 @@
 {
     "commands": [
         {
-            "mode": "replyAny",
-            "triggers": ["тг", "телеграм", "tg", "telegram"],
-            "message": "https://t.me/artshoque_tv"
+            "mode": "reply",
+            "triggers": ["tg", "telegram"],
+            "message": "reply https://t.me/artshoque_tv"
         },
         {
-            "mode": "custom",
-            "triggers": ["тг", "телеграм", "tg", "telegram"],
-            "message": "https://t.me/artshoque_tv"
+            "mode": "replyCommand",
+            "triggers": ["tg", "telegram"],
+            "message": "reply command https://t.me/artshoque_tv"
+        },
+        {
+            "mode": "random",
+            "triggers": ["random"],
+            "message": "Якийсь текст <sender> <parameter> <number>"
         }
-    ]
+    ],
+    "spam": {
+        "ads": ["telegram", "instagram", "test"],
+        "interval_seconds": 10,
+        "interval_messages": 2
+    }
 }
