@@ -5,6 +5,8 @@ from twitchAPI.chat import Chat, EventData, ChatMessage, ChatSub, ChatCommand
 import asyncio
 import json
 
+from datetime import datetime
+
 import database
 import tts
 
@@ -12,8 +14,8 @@ with open("config.json", "r") as jsonfile:
     data = json.load(jsonfile)
     print("Config read successful")
 
-with open("chatcommands.json", "r") as jsonfile:
-    commands = json.load(jsonfile)
+with open("chat_settings.json", "r") as jsonfile:
+    settings = json.load(jsonfile)
     print("Chatcommands read successful")
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
@@ -24,7 +26,10 @@ APP_SECRET = data["clientSecret"]
 
 chat = None
 uniqueChatters = []
-
+spam_counters = {
+    'between': 0,
+    'message_counter': 0
+}
 
 async def on_ready(ready_event: EventData):
     print('Bot is ready for work, joining channels')
@@ -32,16 +37,31 @@ async def on_ready(ready_event: EventData):
 
 
 async def on_message(msg: ChatMessage):
-    print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
-    database.addUser(msg.user.name)
+    # print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+    user_info = database.addUser(msg.user.name)
+    spam_counters['between']=spam_counters['between']+1
+    print(user_info)
     if "тг" in msg.text.lower():
         await chat.send_message(TARGET_CHANNEL, "https://t.me/artshoque_tv")
-    if not msg.user.name in uniqueChatters:
-        tts.welcome(database.getLocalUser(msg.user.name))
-        uniqueChatters.append(msg.user.name)
+    last_welcome_hours = (datetime.now()-datetime.strptime(user_info[8], '%Y.%m.%d %H:%M')).total_seconds()/3600
+    if last_welcome_hours > settings['welcome_cooldown']:
+        tts.say(f"Здоров, {database.getLocalUser(msg.user.name)}, як ся маєш?", 10, 'uk')
+        database.setLastWelcome(msg.user.name)
+        # uniqueChatters.append(msg.user.name)
     database.incrementMessageCount(msg.user.name)
-    if msg.text[:2]=="! ":
-        say_plain(msg.user.name, msg.text)
+    if (msg.text[0]=="'"):
+        lang = msg.text[1:3]
+        sub = 3
+        langs = ['uk', 'en', 'pl', 'fr', 'es', 'ja', 'sk', 'ko']
+        if lang not in langs:
+            lang = 'uk'
+            sub = 1
+        last_message_seconds = (datetime.now()-datetime.strptime(user_info[7], '%Y.%m.%d %H:%M')).total_seconds()
+        if (last_message_seconds>settings['voice_cooldown']):
+            tts.say(f"{database.getLocalUser(msg.user.name)}, каже {msg.text[sub:]}", settings['voice_length'], lang)
+            database.setLastSay(msg.user.name)
+        else:
+            await msg.reply(f'Стоп кам. Зачекай ще {str(int(settings["voice_cooldown"]-last_message_seconds))} секунд.')
 
 
 async def on_reply(cmd: ChatCommand):
@@ -52,18 +72,6 @@ async def on_reply(cmd: ChatCommand):
         print(cmd.parameter)
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
-async def on_say(cmd: ChatCommand):
-    database.addUser(cmd.user.name)
-    if len(cmd.parameter) == 0:
-        await cmd.reply('ти не написав мені, що сказати')
-    else:
-        tts.say(database.getLocalUser(cmd.user.name), cmd.parameter)
-        # await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
-
-def say_plain(user, msg):
-    database.addUser(user)
-    tts.say(database.getLocalUser(user), msg)
-        # await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
 async def on_me(cmd: ChatCommand):
     database.addUser(cmd.user.name)
@@ -83,13 +91,7 @@ async def on_whoami(cmd: ChatCommand):
     database.addUser(cmd.user.name)
     await cmd.reply(f"Ти назвав себе {database.getLocalUser(cmd.user.name)}")
 
-# Custom functions goes here
 
-async def on_random(cmd: ChatCommand, isParam: bool, sender, target, parameter):
-    if (len(cmd.parameter) == 0) and (isParam == True):
-        await cmd.reply('не бачу аргументу, не можу виконати цю команду')
-    else:
-        await cmd.reply
 
 async def run():
     global chat
@@ -102,22 +104,9 @@ async def run():
     chat.register_event(ChatEvent.READY, on_ready)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
-    chat.register_command("скажи", on_say)
-    chat.register_command("я", on_me)
+    chat.register_command("яє", on_me)
     chat.register_command("скільки", on_howmuch)
     chat.register_command("хтоя", on_whoami)
-    
-
-    for command in commands["commands"]:
-        if command["mode"] == "replyCommand":
-            for trigger in command["triggers"]:
-                chat.register_command(trigger, on_reply)
-        # if command["mode"] == "random":
-        #     for trigger in command["triggers"]:
-        #         chat.register_command(trigger, on_random)
-        # if command["mode"] == "random_par":
-        #     for trigger in command["triggers"]:
-        #         chat.register_command(trigger, on_random_par)
 
 
 

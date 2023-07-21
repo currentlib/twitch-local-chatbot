@@ -12,8 +12,9 @@ def isUserAdded(user):
 def addUser(user):
     if not isUserAdded(user):
         now = datetime.now()
-        cur.execute(f"INSERT INTO users (username_twitch, username_local, is_changeable, first_message, message_count) VALUES ('{user}', '{user}', True, '{now.strftime('%Y.%m.%d %H:%M')}', 0);")
+        cur.execute(f"INSERT INTO users (username_twitch, username_local, is_changeable, first_message, message_count, is_limited, last_message, last_say, last_welcome) VALUES ('{user}', '{user}', True, '{now.strftime('%Y.%m.%d %H:%M')}', 0, 1, '', '{now.strftime('%Y.%m.%d %H:%M')}'), '2023.07.01 00:00';")
         con.commit()
+    return getUser(user)[0]
 
 def getUser(user):
     res = cur.execute(f"SELECT * FROM users WHERE username_twitch='{user}';")
@@ -22,7 +23,7 @@ def getUser(user):
 def setLocalUser(user, local_username):
     user_data = getUser(user)[0]
     if user_data[2]==1:
-        cur.execute(f"UPDATE users SET username_local='{local_username}' WHERE username_twitch='{user}'")
+        cur.execute(f"UPDATE users SET username_local='{local_username}', last_message='{datetime.now().strftime('%Y.%m.%d %H:%M')}' WHERE username_twitch='{user}'")
         con.commit()
     else:
         print("User is not changeable.")
@@ -40,6 +41,16 @@ def incrementMessageCount(user):
 def getMessageCount(user):
     res = getUser(user)
     return res[0][4]
+
+def setLastSay(user):
+    user_data = getUser(user)[0]
+    cur.execute(f"UPDATE users SET last_say='{datetime.now().strftime('%Y.%m.%d %H:%M')}' WHERE username_twitch='{user}'")
+    con.commit()
+
+def setLastWelcome(user):
+    user_data = getUser(user)[0]
+    cur.execute(f"UPDATE users SET last_welcome='{datetime.now().strftime('%Y.%m.%d %H:%M')}' WHERE username_twitch='{user}'")
+    con.commit()
 
 # addUser("Aaaartshoque")
 # setLocalUser("artshoque", "Софія")

@@ -1,0 +1,11 @@
+{
+    "voice_cooldown": 60,
+    "voice_length": 15,
+    "welcome_cooldown": 10,
+    "spam": {
+        "messages": ["telegram", "other spam", "other spam 2", "other spam 3"],
+        "cooldown": 5,
+        "check_cooldown": 5,
+        "between": 2
+    }
+}
